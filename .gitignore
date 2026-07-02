@@ -36,9 +36,8 @@ logs/
 *.log
 
 # Data files (optional)
-# If you DO NOT want to commit large CSV files (private or big), keep the line below.
-# If you want GitHub Pages to serve your CSV files from /data/, remove the line below.
-data/*.csv
+# CSV data will be committed so GitHub Pages can serve them.
+# If you prefer to ignore specific large or private files, add patterns here.
 
 # Misc
 *.swp
