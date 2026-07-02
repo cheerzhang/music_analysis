@@ -1,0 +1,50 @@
+# Node / JS
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-lock.yaml
+package-lock.json
+
+# Build / cache
+dist/
+build/
+.cache/
+.parcel-cache/
+coverage/
+
+# Environment
+.env
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Python
+__pycache__/
+*.pyc
+
+# Logs
+logs/
+*.log
+
+# Data files (optional)
+# If you DO NOT want to commit large CSV files (private or big), keep the line below.
+# If you want GitHub Pages to serve your CSV files from /data/, remove the line below.
+data/*.csv
+
+# Misc
+*.swp
+*.tmp
+
+# Local server state
+/.python-eggs/
+
+# End of .gitignore

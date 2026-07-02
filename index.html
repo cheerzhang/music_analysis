@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>音乐收入分析仪表盘</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">个人音乐分析仪表盘</p>
+          <h1>把你的音乐收入数据变成可执行的创作方向</h1>
+          <p class="subtitle">
+            这是一个面向独立音乐人的分析工具，帮助你看清收益来源、平台表现、地区分布与长期趋势。
+          </p>
+        </div>
+        <div class="controls-card">
+          <button id="sampleBtn" type="button" class="secondary-btn">重新加载 data 目录</button>
+          <p id="status" class="status">正在从 data 目录读取 CSV 数据…</p>
+        </div>
+      </header>
+
+      <section class="summary-grid" id="summaryGrid"></section>
+
+      <section class="metric-group">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">创作洞察</p>
+            <h2>歌曲收益评分</h2>
+            <p class="section-copy">按总收入优先，展示你当前最强的 4 首歌曲指标。</p>
+          </div>
+        </div>
+        <div class="metric-grid" id="metricGrid"></div>
+      </section>
+
+      <section class="metric-group">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">播放势能</p>
+            <h2>歌曲播放排行</h2>
+            <p class="section-copy">选取播放量最高的 4 首歌，分析传播动能与变现效率。</p>
+          </div>
+        </div>
+        <div class="metric-grid" id="playMetricGrid"></div>
+      </section>
+
+      <section class="dashboard-grid full-width-grid">
+        <article class="card chart-card full-width-card">
+          <div class="card-header">
+            <h2>歌曲收益排行</h2>
+            <p>看看哪首歌真正贡献了大部分收入</p>
+          </div>
+          <div id="songChart" class="chart-container"></div>
+        </article>
+
+        <article class="card chart-card full-width-card">
+          <div class="card-header">
+            <h2>平台表现</h2>
+            <p>比较不同流媒体平台的收益占比</p>
+          </div>
+          <div id="platformChart" class="platform-list"></div>
+        </article>
+
+        <article class="card chart-card full-width-card">
+          <div class="card-header">
+            <h2>地区听众分布</h2>
+            <p>哪些国家或地区更容易带来稳定收入</p>
+          </div>
+          <div id="countryChart" class="country-list"></div>
+        </article>
+
+        <article class="card chart-card full-width-card">
+          <div class="card-header">
+            <h2>长期趋势</h2>
+            <p>查看收入随时间的变化方向</p>
+          </div>
+          <div id="trendChart" class="chart-container"></div>
+        </article>
+      </section>
+
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

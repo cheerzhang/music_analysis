@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>歌曲详情</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">歌曲分析</p>
+          <h1 id="songTitle">歌曲详情</h1>
+          <p id="songSubtitle" class="subtitle">查看这首歌的收入表现与分布情况。</p>
+        </div>
+        <div class="controls-card">
+          <a class="secondary-btn" href="./index.html">返回总览</a>
+          <p id="songStatus" class="status">正在加载歌曲数据…</p>
+        </div>
+      </header>
+
+      <section class="summary-grid" id="songSummaryGrid"></section>
+
+      <section class="dashboard-grid">
+        <article class="card chart-card">
+          <div class="card-header">
+            <h2>收入趋势</h2>
+            <p>观察这首歌随时间的收入变化</p>
+          </div>
+          <div id="songTrendChart" class="chart-container"></div>
+        </article>
+
+        <article class="card chart-card">
+          <div class="card-header">
+            <h2>平台分布</h2>
+            <p>哪个平台带来了最多收入</p>
+          </div>
+          <div id="songPlatformChart" class="platform-list"></div>
+        </article>
+
+        <article class="card chart-card">
+          <div class="card-header">
+            <h2>国家/地区分布</h2>
+            <p>哪里是这首歌的主要听众来源</p>
+          </div>
+          <div id="songCountryChart" class="country-list"></div>
+        </article>
+      </section>
+    </div>
+
+    <script src="./song.js"></script>
+  </body>
+</html>
