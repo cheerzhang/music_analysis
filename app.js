@@ -239,29 +239,26 @@ function renderSummary(rows) {
   }
 
   const cards = [
-    { title: "总收入", value: toCurrency(totalRevenue), detail: "所有记录累计收益" },
-    { title: "总播放", value: formatCount(totalPlays), detail: "所有记录累计播放量" },
-    { title: "每10万次变现", value: formatRevenuePerHundredThousand(avgRevPerPlay), detail: "平均每10万次播放的收益" },
-    { title: "发布", value: `${releaseMonths} 个月`, detail: "自发布以来经过的月份数" },
-    { title: "有收入", value: `${incomeMonths} 个月`, detail: "出现有效收入的月份数" },
-    { title: "增长趋势", value: `${growth >= 0 ? "+" : ""}${growth.toFixed(1)}%`, detail: "按月均值观察变化" },
+    { icon: "＄", title: "总收入", value: toCurrency(totalRevenue), detail: "所有记录累计收益", tone: "violet" },
+    { icon: "▶", title: "总播放", value: formatCount(totalPlays), detail: "所有记录累计播放量", tone: "cyan" },
+    { icon: "↗", title: "每10万次变现", value: formatRevenuePerHundredThousand(avgRevPerPlay), detail: "平均每10万次播放收益", tone: "mint" },
+    { icon: "◷", title: "发布周期", value: `${releaseMonths} 个月`, detail: "自发布以来经过的月份", tone: "amber" },
+    { icon: "●", title: "活跃收入", value: `${incomeMonths} 个月`, detail: "出现有效收入的月份", tone: "pink" },
+    { icon: "⌁", title: "增长趋势", value: `${growth >= 0 ? "+" : ""}${growth.toFixed(1)}%`, detail: "首月至今的收入变化", tone: growth >= 0 ? "mint" : "pink" },
   ];
 
   document.getElementById("summaryGrid").innerHTML = cards
     .map(
       (card) => `
-        <article class="summary-card">
-          <h3>${card.title}</h3>
+        <article class="summary-card summary-card--${card.tone}">
+          <div class="summary-card__top"><span class="summary-icon">${card.icon}</span><h3>${card.title}</h3></div>
           <div class="value">${card.value}</div>
-          <p class="status">${card.detail}</p>
+          <p>${card.detail}</p>
         </article>
       `
     )
     .join("");
 
-  document.getElementById("summaryGrid").querySelectorAll(".summary-card").forEach((card, index) => {
-    card.style.borderColor = index === 3 ? "rgba(67,217,173,0.35)" : "rgba(124,156,255,0.2)";
-  });
 }
 
 function renderSongChart(rows) {
@@ -744,16 +741,16 @@ function renderMetrics(rows) {
     .sort((a, b) => b.totalRevenue - a.totalRevenue)
     .slice(0, 4);
   document.getElementById("metricGrid").innerHTML = songScores
-    .map((song) => `
+    .map((song, index) => `
       <a class="metric-link" href="./song.html?song=${encodeURIComponent(song.song)}">
         <article class="metric-card metric-card--highlight">
+          <div class="metric-card__head"><span class="metric-rank">0${index + 1}</span><span class="metric-arrow">↗</span></div>
           <h3>${song.song}</h3>
-          <div class="value">${song.totalScore}</div>
-          <div class="detail">
-            总收入 ${toCurrency(song.totalRevenue)}<br />
-            Evergreen ${song.evergreen} · 慢热 ${song.slowBurn}<br />
-            平台 ${song.platformCount} · 国家 ${song.countryCount}<br />
-            趋势 ${song.trendDirection} · 爆发 ${song.surpriseHit} · 上线 ${song.releaseMonths}
+          <div class="metric-score"><strong>${song.totalScore.replace(" 分", "")}</strong><span>/ 100 创作指数</span></div>
+          <div class="metric-primary"><span>累计收入</span><strong>${toCurrency(song.totalRevenue)}</strong></div>
+          <div class="metric-tags">
+            <span>常青 ${song.evergreen}</span><span>慢热 ${song.slowBurn}</span>
+            <span>${song.platformCount} 平台</span><span>${song.countryCount} 地区</span>
           </div>
         </article>
       </a>
@@ -767,14 +764,15 @@ function renderPlayMetrics(rows) {
     .slice(0, 4);
 
   document.getElementById("playMetricGrid").innerHTML = playScores
-    .map((song) => `
-      <article class="metric-card metric-card--highlight">
+    .map((song, index) => `
+      <article class="metric-card metric-card--plays">
+        <div class="metric-card__head"><span class="metric-rank">0${index + 1}</span><span class="trend-pill">${song.trendDirection}</span></div>
         <h3>${song.song}</h3>
-        <div class="value">${song.totalScore}</div>
-        <div class="detail">
-          播放 ${formatCount(song.totalPlays)} · 收入 ${toCurrency(song.totalRevenue)}<br />
-          变现 ${formatRevenuePerHundredThousand(song.avgRevPerPlay)} · 动能 ${song.playMomentum}<br />
-          平台 ${song.platformCount} · 国家 ${song.countryCount} · 趋势 ${song.trendDirection}
+        <div class="metric-score"><strong>${formatCount(song.totalPlays)}</strong><span>累计播放</span></div>
+        <div class="metric-primary"><span>播放变现</span><strong>${formatRevenuePerHundredThousand(song.avgRevPerPlay)}</strong></div>
+        <div class="metric-tags">
+          <span>动能 ${song.playMomentum}</span><span>收入 ${toCurrency(song.totalRevenue)}</span>
+          <span>${song.platformCount} 平台</span><span>${song.countryCount} 地区</span>
         </div>
       </article>
     `)
