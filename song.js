@@ -388,6 +388,26 @@ function renderPlatformChart(rows) {
     .join("");
 }
 
+function renderPlayPlatformChart(rows) {
+  const totals = rows.reduce((acc, row) => {
+    const platform = row.platform || "Unknown";
+    acc[platform] = (acc[platform] || 0) + Number(row.plays || 0);
+    return acc;
+  }, {});
+  const entries = Object.entries(totals).filter(([, value]) => value > 0).sort((a, b) => b[1] - a[1]);
+  const total = entries.reduce((sum, [, value]) => sum + value, 0);
+
+  document.getElementById("songPlayPlatformChart").innerHTML = entries.length
+    ? entries.map(([label, value], index) => `
+        <div class="song-distribution-item">
+          <span class="distribution-rank">${String(index + 1).padStart(2, "0")}</span>
+          <div class="distribution-main"><div><span>${label}</span><strong>${formatCount(value)}</strong></div><div class="bar-track"><div class="bar-fill" style="width:${total ? (value / total) * 100 : 0}%;"></div></div></div>
+          <span class="distribution-share">${total ? Math.round((value / total) * 100) : 0}%</span>
+        </div>
+      `).join("")
+    : '<p class="empty-channel-state">暂无平台播放数据</p>';
+}
+
 function renderPeakMonth(rows) {
   const monthly = rows.reduce((acc, row) => {
     const date = new Date(row.date);
@@ -449,6 +469,7 @@ async function renderSongPage() {
   renderYearlyStats(songRows);
   renderTrendChart(songRows);
   renderPlatformChart(songRows);
+  renderPlayPlatformChart(songRows);
 }
 
 window.addEventListener("DOMContentLoaded", renderSongPage);

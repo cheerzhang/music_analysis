@@ -811,7 +811,6 @@ svg text { fill: var(--muted); font-size: 12px; }
 .song-trend-point text { fill: #707687; font-size: 10px; }
 
 .song-distribution-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-.song-distribution-grid--single { grid-template-columns: minmax(0, 1fr); }
 .song-list-card { min-width: 0; }
 .song-list-card .platform-list, .song-list-card .country-list { max-height: 520px; overflow-y: auto; padding-right: 4px; scrollbar-width: thin; scrollbar-color: rgba(155,135,245,.2) transparent; }
 .song-distribution-item { display: grid; grid-template-columns: 26px minmax(0, 1fr) 38px; align-items: center; gap: 10px; padding: 11px 4px; border-bottom: 1px solid rgba(255,255,255,.055); }
@@ -822,6 +821,9 @@ svg text { fill: var(--muted); font-size: 12px; }
 .distribution-main strong { flex: 0 0 auto; color: #969dac; font-size: .7rem; }
 .distribution-main .bar-track { height: 4px; }
 .distribution-share { color: #8e7ee0; font-size: .7rem; text-align: right; }
+.song-list-card--plays .distribution-share { color: #68ddb5; }
+.song-list-card--plays .bar-fill { background: linear-gradient(90deg, #44b894, #73e6bd); }
+.empty-channel-state { margin: 24px 0; color: #6f7685; font-size: .78rem; text-align: center; }
 
 @media (max-width: 920px) {
   .hero,
