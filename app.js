@@ -334,7 +334,6 @@ function renderPlatformChart(rows) {
     .map(([label, value]) => {
       const percent = total ? Math.round((value / total) * 100) : 0;
       const monthlyEntries = Object.entries(monthly[label] || {}).sort(([a], [b]) => (a > b ? 1 : -1));
-      const trendSvg = monthlyEntries.length ? buildTrendSvg(monthlyEntries.map(([, monthValue]) => monthValue), monthlyEntries.map(([month]) => month)) : "";
       const monthlySongTotals = rows
         .filter((row) => row.platform === label)
         .reduce((acc, row) => {
@@ -345,32 +344,11 @@ function renderPlatformChart(rows) {
           acc[month][song] = (acc[month][song] || 0) + Number(row.revenue || 0);
           return acc;
         }, {});
-      const monthlyTopSongs = Object.entries(monthlySongTotals)
-        .sort(([a], [b]) => b.localeCompare(a))
-        .map(([month, songs]) => ({
-          month,
-          songs: Object.entries(songs).sort(([, a], [, b]) => b - a).slice(0, 3),
-        }));
-      const monthlySongsMarkup = monthlyTopSongs.length
-        ? `<div class="platform-monthly-breakdown">
-            <div class="monthly-breakdown-title"><span>每月贡献歌曲</span><small>TOP 3</small></div>
-            <div class="platform-month-list">
-              ${monthlyTopSongs.map(({ month, songs }) => `
-                <div class="platform-month-row">
-                  <time>${formatMonthLabel(month)}</time>
-                  <div class="month-song-list">
-                    ${songs.map(([song, revenue], index) => `
-                      <div class="month-song-item">
-                        <span class="song-rank">${index + 1}</span>
-                        <span class="song-name" title="${song}">${song}</span>
-                        <strong>${toCurrency(revenue)}</strong>
-                      </div>
-                    `).join("")}
-                  </div>
-                </div>
-              `).join("")}
-            </div>
-          </div>`
+      const pointDetails = monthlyEntries.map(([month]) =>
+        Object.entries(monthlySongTotals[month] || {}).sort(([, a], [, b]) => b - a).slice(0, 3)
+      );
+      const trendSvg = monthlyEntries.length
+        ? buildTrendSvg(monthlyEntries.map(([, monthValue]) => monthValue), monthlyEntries.map(([month]) => month), pointDetails)
         : "";
       return `
         <div class="platform-item platform-item--detailed">
@@ -385,7 +363,6 @@ function renderPlatformChart(rows) {
             <summary><span>月度收入趋势</span><span class="details-action">查看图表</span></summary>
             <div class="trend-panel">
               ${trendSvg || '<div class="status">暂无趋势</div>'}
-              ${monthlySongsMarkup}
             </div>
           </details>
         </div>
@@ -414,7 +391,7 @@ function renderPlatformChart(rows) {
   document.getElementById("platformChart").innerHTML = `${topMarkup}${remainderMarkup}`;
 }
 
-function buildTrendSvg(values, labels = []) {
+function buildTrendSvg(values, labels = [], pointDetails = []) {
   if (!values.length) {
     return "";
   }
@@ -431,6 +408,7 @@ function buildTrendSvg(values, labels = []) {
     y: paddingTop + chartHeight - (value / max) * chartHeight,
     value,
     label: labels[index] ? formatMonthLabel(labels[index]) : `${index + 1}`,
+    details: pointDetails[index] || [],
   }));
   const linePath = points.map((point, index) => `${index ? "L" : "M"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
   const baseline = paddingTop + chartHeight;
@@ -454,7 +432,19 @@ function buildTrendSvg(values, labels = []) {
         <line class="mini-grid" x1="${paddingX}" y1="${baseline}" x2="${width - paddingX}" y2="${baseline}"></line>
         <path class="trend-area" d="${areaPath}" fill="url(#${gradientId})"></path>
         <path class="trend-line" d="${linePath}"></path>
-        ${points.map((point) => `<circle class="trend-dot" cx="${point.x}" cy="${point.y}" r="3"><title>${point.label}: ${toCurrency(point.value)}</title></circle>`).join("")}
+        ${points.map((point) => {
+          const tooltipX = Math.max(4, Math.min(width - 224, point.x - 110));
+          const tooltipY = point.y < 92 ? point.y + 10 : point.y - 92;
+          return `<g class="trend-point" tabindex="0">
+            <circle class="trend-dot" cx="${point.x}" cy="${point.y}" r="3"></circle>
+            <foreignObject class="trend-tooltip" x="${tooltipX}" y="${tooltipY}" width="220" height="82">
+              <div xmlns="http://www.w3.org/1999/xhtml" class="trend-tooltip-card">
+                <div class="tooltip-head"><span>${point.label}</span><strong>${toCurrency(point.value)}</strong></div>
+                ${point.details.map(([song, revenue], index) => `<div class="tooltip-song"><span>${index + 1}. ${song}</span><strong>${toCurrency(revenue)}</strong></div>`).join("")}
+              </div>
+            </foreignObject>
+          </g>`;
+        }).join("")}
         ${labelIndexes.map((index) => `<text class="mini-label" x="${points[index].x}" y="${height - 7}" text-anchor="${index === 0 ? "start" : index === values.length - 1 ? "end" : "middle"}">${points[index].label}</text>`).join("")}
       </svg>
     </div>
@@ -524,54 +514,19 @@ function renderTrendChart(rows) {
   const entries = Object.entries(monthly).sort(([a], [b]) => (a > b ? 1 : -1));
   const labels = entries.map(([label]) => label);
   const values = entries.map(([, value]) => value);
-  const padding = 36;
-  const width = Math.max(560, labels.length * 40 + padding * 2);
-  const height = 240;
-  const chartWidth = width - padding * 2;
-  const chartHeight = height - padding * 2;
-  const max = Math.max(...values, 1);
-  const barWidth = Math.max(18, chartWidth / Math.max(values.length, 1) - 10);
-  const labelStep = Math.max(1, Math.ceil(labels.length / 8));
-  const rotate = labels.length > 8 ? -45 : 0;
+  const countryByMonth = rows.reduce((acc, row) => {
+    const date = new Date(row.date);
+    const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    const country = row.country || "Unknown";
+    acc[month] ||= {};
+    acc[month][country] = (acc[month][country] || 0) + Number(row.revenue || 0);
+    return acc;
+  }, {});
+  const topCountries = labels.map((month) =>
+    Object.entries(countryByMonth[month] || {}).sort(([, a], [, b]) => b - a).slice(0, 3)
+  );
 
-  const gridMarkup = Array.from({ length: 4 }, (_, index) => {
-    const y = padding + (index / 3) * chartHeight;
-    const tickValue = max - (max / 3) * index;
-    return `
-      <line class="chart-grid" x1="${padding}" y1="${y}" x2="${width - padding}" y2="${y}"></line>
-      <text class="chart-label" x="${padding - 8}" y="${y + 4}" text-anchor="end">${toCurrency(tickValue)}</text>
-    `;
-  }).join("");
-
-  const barsMarkup = values.map((value, index) => {
-    const x = padding + index * (barWidth + 10) + 4;
-    const barHeight = (value / max) * chartHeight;
-    const y = height - padding - barHeight;
-    const fullLabel = `${formatMonthLabel(labels[index])}：${toCurrency(value)}`;
-    const label = index % labelStep === 0 ? formatMonthLabel(labels[index]) : "";
-    return `
-      <g class="chart-point" tabindex="0">
-        <title>${fullLabel}</title>
-        <rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="6" fill="url(#trendGradient)"></rect>
-        <text class="chart-label" x="${x + barWidth / 2}" y="${height - 10}" text-anchor="middle" transform="rotate(${rotate} ${x + barWidth / 2} ${height - 10})">${label}</text>
-      </g>
-    `;
-  }).join("");
-
-  document.getElementById("trendChart").innerHTML = `
-    <svg class="chart-svg" viewBox="0 0 ${width} ${height}" width="${width}" height="240">
-      <defs>
-        <linearGradient id="trendGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stop-color="#7c9cff"></stop>
-          <stop offset="100%" stop-color="#43d9ad"></stop>
-        </linearGradient>
-      </defs>
-      <line class="chart-axis" x1="${padding}" y1="${height - padding}" x2="${width - padding}" y2="${height - padding}"></line>
-      <line class="chart-axis" x1="${padding}" y1="${padding}" x2="${padding}" y2="${height - padding}"></line>
-      ${gridMarkup}
-      ${barsMarkup}
-    </svg>
-  `;
+  document.getElementById("trendChart").innerHTML = buildTrendSvg(values, labels, topCountries);
 }
 
 function renderInsights(rows) {

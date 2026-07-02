@@ -8,44 +8,51 @@
   </head>
   <body>
     <div class="app-shell">
-      <header class="hero">
+      <header class="song-hero">
         <div>
-          <p class="eyebrow">歌曲分析</p>
+          <a class="song-back" href="./index.html">← 返回作品总览</a>
+          <p class="eyebrow">Track intelligence</p>
           <h1 id="songTitle">歌曲详情</h1>
           <p id="songSubtitle" class="subtitle">查看这首歌的收入表现与分布情况。</p>
         </div>
-        <div class="controls-card">
-          <a class="secondary-btn" href="./index.html">返回总览</a>
+        <div class="song-load-state">
           <p id="songStatus" class="status">正在加载歌曲数据…</p>
         </div>
       </header>
 
-      <section class="summary-grid" id="songSummaryGrid"></section>
+      <section class="song-kpi-grid" id="songSummaryGrid"></section>
 
-      <section class="dashboard-grid">
-        <article class="card chart-card">
-          <div class="card-header">
-            <h2>收入趋势</h2>
-            <p>观察这首歌随时间的收入变化</p>
+      <section class="song-year-section">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Year by year</p>
+            <h2>年度表现</h2>
+            <p class="section-copy">比较每一年的收入、播放量与月均表现。</p>
           </div>
-          <div id="songTrendChart" class="chart-container"></div>
+        </div>
+        <div class="song-year-grid" id="songYearGrid"></div>
+      </section>
+
+      <section class="song-detail-section">
+        <article class="card chart-card song-trend-card">
+          <div class="card-header">
+            <p class="eyebrow">Monthly revenue</p>
+            <h2>收入生命周期</h2>
+            <p>观察作品上线后的收入节奏与持续性</p>
+          </div>
+          <div id="songTrendChart" class="song-trend-chart"></div>
         </article>
 
-        <article class="card chart-card">
-          <div class="card-header">
-            <h2>平台分布</h2>
-            <p>哪个平台带来了最多收入</p>
-          </div>
-          <div id="songPlatformChart" class="platform-list"></div>
-        </article>
+        <div class="song-distribution-grid song-distribution-grid--single">
+          <article class="card chart-card song-list-card">
+            <div class="card-header">
+              <h2>平台分布</h2>
+              <p>收入来自哪些渠道</p>
+            </div>
+            <div id="songPlatformChart" class="platform-list"></div>
+          </article>
 
-        <article class="card chart-card">
-          <div class="card-header">
-            <h2>国家/地区分布</h2>
-            <p>哪里是这首歌的主要听众来源</p>
-          </div>
-          <div id="songCountryChart" class="country-list"></div>
-        </article>
+        </div>
       </section>
     </div>
 
