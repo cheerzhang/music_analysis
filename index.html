@@ -22,28 +22,72 @@
         </div>
       </header>
 
-      <section class="summary-grid" id="summaryGrid"></section>
-
-      <section class="metric-group">
-        <div class="section-head">
-          <div>
-            <p class="eyebrow">创作洞察</p>
-            <h2>歌曲收益评分</h2>
-            <p class="section-copy">按总收入优先，展示你当前最强的 4 首歌曲指标。</p>
+      <section class="analysis-section analysis-section--revenue">
+        <div class="analysis-section__label"><span>01</span> Revenue</div>
+        <section class="metric-group overview-section">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Revenue overview</p>
+              <h2>收入总览</h2>
+              <p class="section-copy">累计收入，以及各年度的收入规模和月均表现。</p>
+            </div>
           </div>
-        </div>
-        <div class="metric-grid" id="metricGrid"></div>
+          <div class="summary-grid" id="summaryGrid"></div>
+        </section>
+
+        <section class="metric-group">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Top revenue tracks</p>
+              <h2>收入贡献最高的三首歌</h2>
+              <p class="section-copy">聚焦最能带来收入的作品，并观察它们的长期价值。</p>
+            </div>
+          </div>
+          <div class="metric-grid" id="metricGrid"></div>
+        </section>
       </section>
 
-      <section class="metric-group">
+      <section class="analysis-section analysis-section--plays">
+        <div class="analysis-section__label"><span>02</span> Audience</div>
+        <section class="metric-group overview-section">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Plays overview</p>
+              <h2>播放总览</h2>
+              <p class="section-copy">累计播放量，以及各年度的播放规模和月均表现。</p>
+            </div>
+          </div>
+          <div class="summary-grid" id="playSummaryGrid"></div>
+        </section>
+
+        <section class="metric-group">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Top played tracks</p>
+              <h2>播放量最高的三首歌</h2>
+              <p class="section-copy">聚焦传播最广的作品，并观察动能与变现效率。</p>
+            </div>
+          </div>
+          <div class="metric-grid" id="playMetricGrid"></div>
+        </section>
+      </section>
+
+      <section class="analysis-section analysis-section--platform">
+        <div class="analysis-section__label"><span>03</span> Platform</div>
         <div class="section-head">
           <div>
-            <p class="eyebrow">播放势能</p>
-            <h2>歌曲播放排行</h2>
-            <p class="section-copy">选取播放量最高的 4 首歌，分析传播动能与变现效率。</p>
+            <p class="eyebrow">Platform analysis</p>
+            <h2>平台表现</h2>
+            <p class="section-copy">比较不同流媒体平台带来的收入、份额与长期表现。</p>
           </div>
         </div>
-        <div class="metric-grid" id="playMetricGrid"></div>
+        <article class="card chart-card full-width-card">
+          <div class="card-header">
+            <h2>平台收入分布</h2>
+            <p>哪些平台正在真正支撑你的创作收入</p>
+          </div>
+          <div id="platformChart" class="platform-list"></div>
+        </article>
       </section>
 
       <section class="dashboard-grid full-width-grid">
@@ -53,14 +97,6 @@
             <p>看看哪首歌真正贡献了大部分收入</p>
           </div>
           <div id="songChart" class="chart-container"></div>
-        </article>
-
-        <article class="card chart-card full-width-card">
-          <div class="card-header">
-            <h2>平台表现</h2>
-            <p>比较不同流媒体平台的收益占比</p>
-          </div>
-          <div id="platformChart" class="platform-list"></div>
         </article>
 
         <article class="card chart-card full-width-card">

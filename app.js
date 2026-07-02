@@ -206,59 +206,70 @@ function toDate(value) {
   return new Date(value);
 }
 
-function renderSummary(rows) {
-  const totalRevenue = rows.reduce((sum, row) => sum + Number(row.revenue), 0);
-  const songRevenue = aggregateBy(rows, (row) => row.song || "Unknown");
-  const visibleSongs = getVisibleEntries(songRevenue).sort((a, b) => b[1] - a[1]);
-  const bestSong = visibleSongs[0];
-  const platformRevenue = aggregateBy(rows, (row) => row.platform || "Unknown");
-  const visiblePlatforms = getVisibleEntries(platformRevenue).sort((a, b) => b[1] - a[1]);
-  const bestPlatform = visiblePlatforms[0];
-  const countryRevenue = aggregateBy(rows, (row) => row.country || "Unknown");
-  const visibleCountries = getVisibleEntries(countryRevenue).sort((a, b) => b[1] - a[1]);
-  const bestCountry = visibleCountries[0];
-
-  const monthly = rows.reduce((acc, row) => {
+function getYearlyStats(rows, valueGetter) {
+  const years = {};
+  rows.forEach((row) => {
     const date = new Date(row.date);
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-    acc[key] = (acc[key] || 0) + Number(row.revenue);
-    return acc;
-  }, {});
-  const values = Object.values(monthly);
-  const growth = values.length > 1 ? ((values[values.length - 1] - values[0]) / values[0]) * 100 : 0;
+    if (Number.isNaN(date.getTime())) return;
+    const year = String(date.getFullYear());
+    const month = `${year}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    years[year] ||= { total: 0, months: new Set() };
+    years[year].total += Number(valueGetter(row) || 0);
+    years[year].months.add(month);
+  });
 
-  const totalPlays = rows.reduce((sum, row) => sum + Number(row.plays || 0), 0);
-  const avgRevPerPlay = totalPlays ? totalRevenue / totalPlays : 0;
-  const monthKeys = Object.keys(monthly).sort();
-  const incomeMonths = monthKeys.length;
-  let releaseMonths = 0;
-  if (monthKeys.length > 0) {
-    const [firstYear, firstMonth] = monthKeys[0].split("-").map(Number);
-    const [lastYear, lastMonth] = monthKeys[monthKeys.length - 1].split("-").map(Number);
-    releaseMonths = (lastYear - firstYear) * 12 + (lastMonth - firstMonth) + 1;
-  }
+  return Object.entries(years)
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([year, stats]) => ({
+      year,
+      total: stats.total,
+      monthCount: stats.months.size,
+      monthlyAverage: stats.months.size ? stats.total / stats.months.size : 0,
+    }));
+}
 
+function renderOverviewCards(targetId, rows, options) {
+  const yearlyStats = getYearlyStats(rows, options.valueGetter);
+  const total = yearlyStats.reduce((sum, item) => sum + item.total, 0);
   const cards = [
-    { icon: "＄", title: "总收入", value: toCurrency(totalRevenue), detail: "所有记录累计收益", tone: "violet" },
-    { icon: "▶", title: "总播放", value: formatCount(totalPlays), detail: "所有记录累计播放量", tone: "cyan" },
-    { icon: "↗", title: "每10万次变现", value: formatRevenuePerHundredThousand(avgRevPerPlay), detail: "平均每10万次播放收益", tone: "mint" },
-    { icon: "◷", title: "发布周期", value: `${releaseMonths} 个月`, detail: "自发布以来经过的月份", tone: "amber" },
-    { icon: "●", title: "活跃收入", value: `${incomeMonths} 个月`, detail: "出现有效收入的月份", tone: "pink" },
-    { icon: "⌁", title: "增长趋势", value: `${growth >= 0 ? "+" : ""}${growth.toFixed(1)}%`, detail: "首月至今的收入变化", tone: growth >= 0 ? "mint" : "pink" },
+    { type: "total", icon: options.icon, title: options.totalTitle, value: options.format(total), detail: options.totalDetail, tone: options.tone },
+    ...yearlyStats.map((item) => ({ type: "year", icon: item.year.slice(-2), title: `${item.year} 年`, value: options.format(item.total), average: options.format(item.monthlyAverage), detail: `覆盖 ${item.monthCount} 个月`, tone: options.tone })),
   ];
 
-  document.getElementById("summaryGrid").innerHTML = cards
+  document.getElementById(targetId).innerHTML = cards
     .map(
       (card) => `
-        <article class="summary-card summary-card--${card.tone}">
+        <article class="summary-card summary-card--${card.tone} summary-card--${card.type}">
           <div class="summary-card__top"><span class="summary-icon">${card.icon}</span><h3>${card.title}</h3></div>
           <div class="value">${card.value}</div>
+          ${card.type === "year" ? `<div class="year-average"><span>月均</span><strong>${card.average}</strong></div>` : ""}
           <p>${card.detail}</p>
         </article>
       `
     )
     .join("");
+}
 
+function renderSummary(rows) {
+  renderOverviewCards("summaryGrid", rows, {
+    icon: "＄",
+    totalTitle: "总收入",
+    totalDetail: "全部年份累计收入",
+    tone: "violet",
+    valueGetter: (row) => row.revenue,
+    format: toCurrency,
+  });
+}
+
+function renderPlaySummary(rows) {
+  renderOverviewCards("playSummaryGrid", rows, {
+    icon: "▶",
+    totalTitle: "总播放量",
+    totalDetail: "全部年份累计播放",
+    tone: "mint",
+    valueGetter: (row) => row.plays,
+    format: formatCount,
+  });
 }
 
 function renderSongChart(rows) {
@@ -324,6 +335,43 @@ function renderPlatformChart(rows) {
       const percent = total ? Math.round((value / total) * 100) : 0;
       const monthlyEntries = Object.entries(monthly[label] || {}).sort(([a], [b]) => (a > b ? 1 : -1));
       const trendSvg = monthlyEntries.length ? buildTrendSvg(monthlyEntries.map(([, monthValue]) => monthValue), monthlyEntries.map(([month]) => month)) : "";
+      const monthlySongTotals = rows
+        .filter((row) => row.platform === label)
+        .reduce((acc, row) => {
+          const date = new Date(row.date);
+          const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+          const song = row.song || "Unknown";
+          acc[month] ||= {};
+          acc[month][song] = (acc[month][song] || 0) + Number(row.revenue || 0);
+          return acc;
+        }, {});
+      const monthlyTopSongs = Object.entries(monthlySongTotals)
+        .sort(([a], [b]) => b.localeCompare(a))
+        .map(([month, songs]) => ({
+          month,
+          songs: Object.entries(songs).sort(([, a], [, b]) => b - a).slice(0, 3),
+        }));
+      const monthlySongsMarkup = monthlyTopSongs.length
+        ? `<div class="platform-monthly-breakdown">
+            <div class="monthly-breakdown-title"><span>每月贡献歌曲</span><small>TOP 3</small></div>
+            <div class="platform-month-list">
+              ${monthlyTopSongs.map(({ month, songs }) => `
+                <div class="platform-month-row">
+                  <time>${formatMonthLabel(month)}</time>
+                  <div class="month-song-list">
+                    ${songs.map(([song, revenue], index) => `
+                      <div class="month-song-item">
+                        <span class="song-rank">${index + 1}</span>
+                        <span class="song-name" title="${song}">${song}</span>
+                        <strong>${toCurrency(revenue)}</strong>
+                      </div>
+                    `).join("")}
+                  </div>
+                </div>
+              `).join("")}
+            </div>
+          </div>`
+        : "";
       return `
         <div class="platform-item platform-item--detailed">
           <div class="platform-header">
@@ -334,9 +382,10 @@ function renderPlatformChart(rows) {
             <div class="bar-fill" style="width:${percent}%;"></div>
           </div>
           <details>
-            <summary>收入变化趋势</summary>
+            <summary><span>月度收入趋势</span><span class="details-action">查看图表</span></summary>
             <div class="trend-panel">
               ${trendSvg || '<div class="status">暂无趋势</div>'}
+              ${monthlySongsMarkup}
             </div>
           </details>
         </div>
@@ -369,44 +418,46 @@ function buildTrendSvg(values, labels = []) {
   if (!values.length) {
     return "";
   }
-  const padding = 18;
-  const width = Math.max(260, values.length * 32 + padding * 2);
-  const height = 96;
-  const chartWidth = width - padding * 2;
-  const chartHeight = height - padding * 2;
+  const width = 720;
+  const height = 150;
+  const paddingX = 16;
+  const paddingTop = 18;
+  const paddingBottom = 28;
+  const chartWidth = width - paddingX * 2;
+  const chartHeight = height - paddingTop - paddingBottom;
   const max = Math.max(...values, 1);
-  const barWidth = Math.max(12, chartWidth / Math.max(values.length, 1) - 8);
-  const labelStep = Math.max(1, Math.ceil(values.length / 7));
-  const rotate = values.length > 8 ? -35 : 0;
-
-  const bars = values.map((value, index) => {
-    const x = padding + index * (barWidth + 8) + 4;
-    const barHeight = (value / max) * chartHeight;
-    const y = height - padding - barHeight;
-    const fullLabel = labels[index] ? formatMonthLabel(labels[index]) : `${index + 1}`;
-    const label = index % labelStep === 0 ? fullLabel : "";
-    const textX = x + barWidth / 2;
-    return `
-      <g class="chart-point" tabindex="0">
-        <title>${fullLabel}: ${toCurrency(value)}</title>
-        <rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="5" fill="url(#trendGradient)"></rect>
-        <text class="chart-label" x="${textX}" y="${height - 6}" text-anchor="middle" transform="rotate(${rotate} ${textX} ${height - 6})">${label}</text>
-      </g>
-    `;
-  }).join("");
+  const points = values.map((value, index) => ({
+    x: paddingX + (values.length === 1 ? chartWidth / 2 : (index / (values.length - 1)) * chartWidth),
+    y: paddingTop + chartHeight - (value / max) * chartHeight,
+    value,
+    label: labels[index] ? formatMonthLabel(labels[index]) : `${index + 1}`,
+  }));
+  const linePath = points.map((point, index) => `${index ? "L" : "M"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
+  const baseline = paddingTop + chartHeight;
+  const areaPath = `${linePath} L ${points[points.length - 1].x.toFixed(1)} ${baseline} L ${points[0].x.toFixed(1)} ${baseline} Z`;
+  const average = values.reduce((sum, value) => sum + value, 0) / values.length;
+  const latest = values[values.length - 1];
+  const change = values.length > 1 && values[values.length - 2] > 0 ? ((latest - values[values.length - 2]) / values[values.length - 2]) * 100 : 0;
+  const labelIndexes = [...new Set([0, Math.floor((values.length - 1) / 2), values.length - 1])];
+  const gradientId = `trendArea-${values.length}-${Math.round(max * 100)}`.replace(/[^a-zA-Z0-9-]/g, "");
 
   return `
-    <svg class="chart-svg" viewBox="0 0 ${width} ${height}" width="100%" height="96">
-      <defs>
-        <linearGradient id="trendGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stop-color="#7c9cff"></stop>
-          <stop offset="100%" stop-color="#43d9ad"></stop>
-        </linearGradient>
-      </defs>
-      <line class="chart-axis" x1="${padding}" y1="${height - padding}" x2="${width - padding}" y2="${height - padding}"></line>
-      <line class="chart-axis" x1="${padding}" y1="${padding}" x2="${padding}" y2="${height - padding}"></line>
-      ${bars}
-    </svg>
+    <div class="trend-stats">
+      <div><span>最近月份</span><strong>${toCurrency(latest)}</strong><small class="${change >= 0 ? "is-positive" : "is-negative"}">${change >= 0 ? "+" : ""}${change.toFixed(1)}%</small></div>
+      <div><span>月均收入</span><strong>${toCurrency(average)}</strong></div>
+      <div><span>单月峰值</span><strong>${toCurrency(max)}</strong></div>
+    </div>
+    <div class="trend-chart-wrap">
+      <svg class="mini-trend-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="月度收入趋势图">
+        <defs><linearGradient id="${gradientId}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#63c9f2" stop-opacity=".32"></stop><stop offset="100%" stop-color="#63c9f2" stop-opacity="0"></stop></linearGradient></defs>
+        <line class="mini-grid" x1="${paddingX}" y1="${paddingTop + chartHeight / 2}" x2="${width - paddingX}" y2="${paddingTop + chartHeight / 2}"></line>
+        <line class="mini-grid" x1="${paddingX}" y1="${baseline}" x2="${width - paddingX}" y2="${baseline}"></line>
+        <path class="trend-area" d="${areaPath}" fill="url(#${gradientId})"></path>
+        <path class="trend-line" d="${linePath}"></path>
+        ${points.map((point) => `<circle class="trend-dot" cx="${point.x}" cy="${point.y}" r="3"><title>${point.label}: ${toCurrency(point.value)}</title></circle>`).join("")}
+        ${labelIndexes.map((index) => `<text class="mini-label" x="${points[index].x}" y="${height - 7}" text-anchor="${index === 0 ? "start" : index === values.length - 1 ? "end" : "middle"}">${points[index].label}</text>`).join("")}
+      </svg>
+    </div>
   `;
 }
 
@@ -739,7 +790,7 @@ function calculateSongScores(rows) {
 function renderMetrics(rows) {
   const songScores = calculateSongScores(rows)
     .sort((a, b) => b.totalRevenue - a.totalRevenue)
-    .slice(0, 4);
+    .slice(0, 3);
   document.getElementById("metricGrid").innerHTML = songScores
     .map((song, index) => `
       <a class="metric-link" href="./song.html?song=${encodeURIComponent(song.song)}">
@@ -760,8 +811,9 @@ function renderMetrics(rows) {
 
 function renderPlayMetrics(rows) {
   const playScores = calculatePlayScores(rows)
+    .filter((song) => song.totalPlays > 0)
     .sort((a, b) => b.totalPlays - a.totalPlays)
-    .slice(0, 4);
+    .slice(0, 3);
 
   document.getElementById("playMetricGrid").innerHTML = playScores
     .map((song, index) => `
@@ -782,6 +834,7 @@ function renderPlayMetrics(rows) {
 function renderDashboard(rows) {
   state.rows = rows;
   renderSummary(rows);
+  renderPlaySummary(rows);
   renderMetrics(rows);
   renderPlayMetrics(rows);
   renderSongChart(rows);
