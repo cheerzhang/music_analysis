@@ -408,6 +408,71 @@ function renderPlayPlatformChart(rows) {
     : '<p class="empty-channel-state">暂无平台播放数据</p>';
 }
 
+function renderRegionTrendChart(rows) {
+  const countryTotals = rows.reduce((acc, row) => {
+    const country = row.country || "Unknown";
+    acc[country] = (acc[country] || 0) + Number(row.revenue || 0);
+    return acc;
+  }, {});
+  const topCountries = Object.entries(countryTotals).sort(([, a], [, b]) => b - a).slice(0, 3).map(([country]) => country);
+  const months = [...new Set(rows.map((row) => {
+    const date = new Date(row.date);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+  }))].sort();
+  const monthly = rows.reduce((acc, row) => {
+    const date = new Date(row.date);
+    const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    const country = row.country || "Unknown";
+    acc[country] ||= {};
+    acc[country][month] = (acc[country][month] || 0) + Number(row.revenue || 0);
+    return acc;
+  }, {});
+
+  if (!topCountries.length || !months.length) {
+    document.getElementById("songRegionTrendChart").innerHTML = '<p class="empty-channel-state">暂无地区趋势数据</p>';
+    return;
+  }
+
+  const colors = ["#9b87f5", "#63c9f2", "#68ddb5"];
+  const width = 900;
+  const height = 270;
+  const paddingX = 30;
+  const paddingTop = 25;
+  const paddingBottom = 42;
+  const chartWidth = width - paddingX * 2;
+  const chartHeight = height - paddingTop - paddingBottom;
+  const series = topCountries.map((country) => ({
+    country,
+    values: months.map((month) => Number(monthly[country]?.[month] || 0)),
+  }));
+  const max = Math.max(...series.flatMap((item) => item.values), 1);
+  const labelStep = Math.max(1, Math.ceil(months.length / 7));
+  const getPoint = (value, index) => ({
+    x: paddingX + (months.length === 1 ? chartWidth / 2 : (index / (months.length - 1)) * chartWidth),
+    y: paddingTop + chartHeight - (value / max) * chartHeight,
+  });
+
+  const lines = series.map((item, seriesIndex) => {
+    const points = item.values.map(getPoint);
+    const path = points.map((point, index) => `${index ? "L" : "M"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
+    return `<g class="region-series" style="--series-color:${colors[seriesIndex]}">
+      <path class="region-line" d="${path}"></path>
+      ${points.map((point, index) => `<circle class="region-point" cx="${point.x}" cy="${point.y}" r="3.5"><title>${item.country} · ${formatMonthLabel(months[index])}：${toCurrency(item.values[index])}</title></circle>`).join("")}
+    </g>`;
+  }).join("");
+
+  document.getElementById("songRegionTrendChart").innerHTML = `
+    <div class="region-legend">${topCountries.map((country, index) => `<span><i style="background:${colors[index]}"></i>${country}</span>`).join("")}</div>
+    <div class="region-chart-scroll">
+      <svg class="region-trend-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="前三地区月度收入趋势">
+        ${[0, 1, 2].map((index) => `<line class="song-trend-grid" x1="${paddingX}" y1="${paddingTop + (index / 2) * chartHeight}" x2="${width - paddingX}" y2="${paddingTop + (index / 2) * chartHeight}"></line>`).join("")}
+        ${lines}
+        ${months.map((month, index) => index % labelStep === 0 || index === months.length - 1 ? `<text class="region-month-label" x="${getPoint(0, index).x}" y="${height - 10}" text-anchor="${index === 0 ? "start" : index === months.length - 1 ? "end" : "middle"}">${formatMonthLabel(month)}</text>` : "").join("")}
+      </svg>
+    </div>
+  `;
+}
+
 function renderPeakMonth(rows) {
   const monthly = rows.reduce((acc, row) => {
     const date = new Date(row.date);
@@ -470,6 +535,7 @@ async function renderSongPage() {
   renderTrendChart(songRows);
   renderPlatformChart(songRows);
   renderPlayPlatformChart(songRows);
+  renderRegionTrendChart(songRows);
 }
 
 window.addEventListener("DOMContentLoaded", renderSongPage);

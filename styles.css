@@ -825,6 +825,22 @@ svg text { fill: var(--muted); font-size: 12px; }
 .song-list-card--plays .bar-fill { background: linear-gradient(90deg, #44b894, #73e6bd); }
 .empty-channel-state { margin: 24px 0; color: #6f7685; font-size: .78rem; text-align: center; }
 
+.song-region-card {
+  padding: 26px;
+  background: radial-gradient(circle at 88% 0, rgba(99,201,242,.08), transparent 32%), rgba(16,17,24,.88);
+}
+
+.song-region-trend { margin-top: 18px; }
+.region-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.region-legend span { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border-radius: 999px; color: #959cab; background: rgba(255,255,255,.035); font-size: .68rem; }
+.region-legend i { width: 7px; height: 7px; border-radius: 50%; box-shadow: 0 0 10px currentColor; }
+.region-chart-scroll { width: 100%; overflow-x: auto; padding: 8px; border-radius: 16px; background: rgba(255,255,255,.016); }
+.region-trend-svg { display: block; width: 100%; min-width: 700px; height: auto; }
+.region-line { fill: none; stroke: var(--series-color); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; opacity: .92; }
+.region-point { fill: #12151c; stroke: var(--series-color); stroke-width: 2; transition: r .15s ease; }
+.region-point:hover { r: 5.5; }
+.region-month-label { fill: #6f7685; font-size: 10px; }
+
 @media (max-width: 920px) {
   .hero,
   .dashboard-grid,
@@ -858,4 +874,5 @@ svg text { fill: var(--muted); font-size: 12px; }
   .song-kpi--score { grid-column: auto; }
   .song-trend-card { padding: 20px 14px; }
   .song-year-section { padding: 20px 14px; }
+  .song-region-card { padding: 20px 14px; }
 }
