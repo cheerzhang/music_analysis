@@ -706,6 +706,15 @@ function calculateSongScores(rows) {
         : "下降"
       : "平稳";
 
+    // calculate release months (span between first and last month)
+    const monthKeys = Object.keys(songData.series.reduce((acc, item) => { acc[item.month] = true; return acc; }, {})).sort();
+    let releaseMonths = 0;
+    if (monthKeys.length > 0) {
+      const [firstYear, firstMonth] = monthKeys[0].split("-").map(Number);
+      const [lastYear, lastMonth] = monthKeys[monthKeys.length - 1].split("-").map(Number);
+      releaseMonths = (lastYear - firstYear) * 12 + (lastMonth - firstMonth) + 1;
+    }
+
     const totalScore = Math.round(
       evergreen * 0.2 +
       slowBurn * 0.15 +
@@ -724,7 +733,7 @@ function calculateSongScores(rows) {
       countryCount: countries,
       trendDirection,
       surpriseHit: surpriseHit ? "是" : "否",
-      releaseMomentum: `${momentumMonths} 月`,
+      releaseMonths: `${releaseMonths} 月`,
       totalScore: `${totalScore} 分`,
     };
   });
@@ -744,7 +753,7 @@ function renderMetrics(rows) {
             总收入 ${toCurrency(song.totalRevenue)}<br />
             Evergreen ${song.evergreen} · 慢热 ${song.slowBurn}<br />
             平台 ${song.platformCount} · 国家 ${song.countryCount}<br />
-            趋势 ${song.trendDirection} · 爆发 ${song.surpriseHit} · 上线 ${song.releaseMomentum}
+            趋势 ${song.trendDirection} · 爆发 ${song.surpriseHit} · 上线 ${song.releaseMonths}
           </div>
         </article>
       </a>
