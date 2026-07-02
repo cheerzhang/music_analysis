@@ -112,6 +112,10 @@ async function discoverDataSources() {
     console.warn("manifest unavailable", error);
   }
 
+  if (sources.length) {
+    return sources.filter((source, index, list) => list.findIndex((item) => item.name === source.name) === index);
+  }
+
   try {
     const dirResponse = await fetch("./data/", { cache: "no-store" });
     if (dirResponse.ok) {

@@ -503,6 +503,47 @@ function renderCountryChart(rows) {
   document.getElementById("countryChart").innerHTML = `${topMarkup}${remainderMarkup}`;
 }
 
+function renderCountryPieCharts(rows) {
+  const palette = ["#9b87f5", "#63c9f2", "#68ddb5", "#f5b95f", "#ef78ae", "#7d91f2", "#4f5668"];
+  const groups = [{ label: "全部收入", rows, type: "total" }];
+  const yearlyRows = rows.reduce((acc, row) => {
+    const year = String(new Date(row.date).getFullYear());
+    acc[year] ||= [];
+    acc[year].push(row);
+    return acc;
+  }, {});
+  Object.entries(yearlyRows).sort(([a], [b]) => b.localeCompare(a)).forEach(([year, yearRows]) => {
+    groups.push({ label: `${year} 年`, rows: yearRows, type: "year" });
+  });
+
+  document.getElementById("countryPieGrid").innerHTML = groups.map((group) => {
+    const totals = aggregateBy(group.rows, (row) => row.country || "Unknown");
+    const sorted = Object.entries(totals).filter(([, value]) => value > 0).sort(([, a], [, b]) => b - a);
+    const total = sorted.reduce((sum, [, value]) => sum + value, 0);
+    const entries = sorted.slice(0, 6);
+    const other = sorted.slice(6).reduce((sum, [, value]) => sum + value, 0);
+    if (other > 0) entries.push(["其他", other]);
+    let cursor = 0;
+    const segments = entries.map(([, value], index) => {
+      const start = cursor;
+      cursor += total ? (value / total) * 100 : 0;
+      return `${palette[index]} ${start.toFixed(2)}% ${cursor.toFixed(2)}%`;
+    });
+
+    return `
+      <article class="country-pie-card country-pie-card--${group.type}">
+        <div class="country-pie-card__head"><div><span>${group.type === "total" ? "ALL TIME" : "YEAR"}</span><h3>${group.label}</h3></div><strong>${toCurrency(total)}</strong></div>
+        <div class="country-pie-content">
+          <div class="country-pie" style="background:conic-gradient(${segments.join(",")})"><div><strong>${sorted.length}</strong><span>市场</span></div></div>
+          <div class="country-pie-legend">
+            ${entries.map(([country, value], index) => `<div><i style="background:${palette[index]}"></i><span>${country}</span><strong>${total ? ((value / total) * 100).toFixed(1) : "0.0"}%</strong><small>${toCurrency(value)}</small></div>`).join("")}
+          </div>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
 function renderTrendChart(rows) {
   const monthly = rows.reduce((acc, row) => {
     const date = new Date(row.date);
@@ -794,7 +835,7 @@ function renderDashboard(rows) {
   renderPlayMetrics(rows);
   renderSongChart(rows);
   renderPlatformChart(rows);
-  renderCountryChart(rows);
+  renderCountryPieCharts(rows);
   renderTrendChart(rows);
 }
 
@@ -869,6 +910,11 @@ async function discoverDataSources() {
     }
   } catch (error) {
     console.warn("manifest not available", error);
+  }
+
+  // manifest 是部署环境中的权威文件清单；命中后无需继续等待目录页或 GitHub API。
+  if (sources.length) {
+    return sources.filter((source, index, list) => list.findIndex((item) => item.name === source.name) === index);
   }
 
   try {
@@ -951,7 +997,12 @@ async function loadAutoData() {
 
 async function loadSampleData() {
   document.getElementById("status").textContent = "正在重新加载 data 目录…";
-  await loadAutoData();
+  try {
+    await loadAutoData();
+  } catch (error) {
+    console.error("Failed to render dashboard", error);
+    document.getElementById("status").textContent = `数据加载异常：${error.message}`;
+  }
 }
 
 async function handleFileUpload(event) {
