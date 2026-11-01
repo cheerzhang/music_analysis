@@ -82,7 +82,8 @@ function toCurrency(value) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
   }).format(value);
 }
 
@@ -116,13 +117,13 @@ function formatCount(value) {
 function formatRevenuePerHundredThousand(value) {
   const num = Number(value || 0);
   if (num <= 0) {
-    return "0";
+    return "0.0";
   }
   const per100k = num * 100000;
   if (per100k >= 10000) {
-    return `${(per100k / 10000).toFixed(1).replace(/\.0$/, "")} 万`;
+    return `${(per100k / 10000).toFixed(1)} 万`;
   }
-  return `${per100k.toFixed(1).replace(/\.0$/, "")} /10万次`;
+  return `${per100k.toFixed(1)} /10万次`;
 }
 
 function parseNumericValue(value) {
